@@ -167,7 +167,32 @@ echo "Wrote \"$lsyncdCfgFile\""
 echo "$key" > $keyFile
 echo "Wrote \"$keyFile\""
 
+###
 # setup /etc/hosts
 
+for _hostString in $(echo $dirsString | tr ',' '\n') ; do
+  _host=${nodesString%%@*}
+  sed -i "/.*$_host.*/d" /etc/hosts
+  _string="127.0.0.1  $_host" 
+  if ! grep -q "$_string"  /etc/hosts ; then
+    echo $_string >> /etc/hosts
+  fi
+done
+echo "Wrote /etc/hosts"
 
 
+###
+# Run csync2
+
+csync2 -ii -N $nodeName &
+csync2Pid=$!
+
+echo "Started csync2 with pid $csync2Pid"
+
+
+###
+# run lsyncd
+
+service lsyncd start
+
+echo "Started lsyncd"
