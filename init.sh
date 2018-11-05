@@ -78,12 +78,13 @@ echo    "}"                  >> $csync2CfgFile
 
 echo "Wrote \"$csync2CfgFile\""
 
+mkdir -p $(dirname $lsyncdCfgFile)
 # create lsyncd cfg
 cat << EOF > $lsyncdCfgFile
 settings {
         logident        = "lsyncd",
         logfacility     = "daemon",
-        logfile         = "/var/log/lsyncd.log",
+        logfile         = "/dev/null",
         statusFile      = "/var/log/lsyncd_status.log",
         statusInterval  = 1
 }
@@ -161,6 +162,10 @@ for key, value in pairs(sources) do
         sync {initSync, source=key, syncid=value}
 end
 EOF
+for _dir in $(echo $dirsString | tr ',' '\n') ; do
+  mkdir -p $_dir
+done
+
 echo "Wrote \"$lsyncdCfgFile\""
 
 # write csync2 key
@@ -170,11 +175,12 @@ echo "Wrote \"$keyFile\""
 ###
 # setup /etc/hosts
 
-for _hostString in $(echo $dirsString | tr ',' '\n') ; do
+for _hostString in $(echo $nodesString | tr ',' '\n') ; do
   _host=${nodesString%%@*}
   sed -i "/.*$_host.*/d" /etc/hosts
   _string="127.0.0.1  $_host" 
   if ! grep -q "$_string"  /etc/hosts ; then
+    echo "Insert $_string in /etc/hosts"
     echo $_string >> /etc/hosts
   fi
 done
@@ -184,7 +190,7 @@ echo "Wrote /etc/hosts"
 ###
 # Run csync2
 
-csync2 -ii -N $nodeName &
+stdbuf -oL csync2 -ii -v -N $nodeName | sed -e 's/^/csync2: /' > /dev/stdout 2>&1 &
 csync2Pid=$!
 
 echo "Started csync2 with pid $csync2Pid"
@@ -193,6 +199,7 @@ echo "Started csync2 with pid $csync2Pid"
 ###
 # run lsyncd
 
-service lsyncd start
+stdbuf -oL /usr/bin/lsyncd  -nodaemon -delay 5 $lsyncdCfgFile 2>&1 | sed -e 's/^/lsyncd: /' > /dev/stdout 2>&1 &
+lsyncdPid=$!
 
-echo "Started lsyncd"
+echo "Started lsyncd with pid $lsyncdPid"
