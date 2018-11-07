@@ -66,7 +66,8 @@ fi
 ###
 # create csync2 cfg
 mkdir -p $csync2CfgDir
-for __host in $(echo $nodesString | tr ',' '\n') ; do
+for _hostString in $(echo $nodesString | tr ',' '\n') ; do
+        __host=${_hostString%%@*}
         csync2CfgFile="$csync2CfgDir/csync2_$(echo ${__host} | tr -d '._-').cfg"
         echo -e "group mycluster \n{" > $csync2CfgFile
         for _host in $(echo $nodesString | tr ',' '\n') ; do
