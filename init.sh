@@ -2,7 +2,7 @@
 
 
 # input
-# (l) Nodi: lista di nome + fqdn ( raspberrymz@proxy-raspberrymz,raspberryvr@proxy-raspberryvr )
+# (l) Nodi: lista di nome + fqdn ( raspberrymz@proxy-raspberrymz,raspberryvr@proxy-raspberryvr ) (tutti i nodi)
 # (n) Nome nodo: nome ( bananam2u1oss)
 # (k) Chiave: stringa base64 ( 8BLJdGh1bD03CLNoAwOwVljJaBj7Qmc9O9q )
 # (d) Directories: lista di directory to sync ( /opt/data/,/opt/data2 )
@@ -42,9 +42,11 @@ done
 # /etc
 # /var/lib/csync2
 
-csync2CfgFile=/etc/csync2.cfg
+csync2CfgDir=/etc/
 lsyncdCfgFile=/etc/lsyncd/lsyncd.conf.lua
 keyFile=/etc/csync2.key
+confName=$(echo $nodeName | tr -d '._-')
+echo "configuration name: $confName"
 
 ######
 # MAIN
@@ -63,20 +65,26 @@ fi
 
 ###
 # create csync2 cfg
+mkdir -p $csync2CfgDir
+for __host in $(echo $nodesString | tr ',' '\n') ; do
+        csync2CfgFile="$csync2CfgDir/csync2_$(echo ${__host} | tr -d '._-').cfg"
+        echo -e "group mycluster \n{" > $csync2CfgFile
+        for _host in $(echo $nodesString | tr ',' '\n') ; do
+                if [  "$_host" != "$__host" ] ; then
+                        echo    "    host ($_host);"   >> $csync2CfgFile
+                else
+                        echo    "    host $_host;"   >> $csync2CfgFile
+                fi
+        done
+        echo    "    key $keyFile;"  >> $csync2CfgFile
+        for _dir in $(echo $dirsString | tr ',' '\n') ; do
+                echo    "    include $_dir;" >> $csync2CfgFile
+        done
+        echo    "    exclude *~ .*;" >> $csync2CfgFile
+        echo    "}"                  >> $csync2CfgFile
 
-echo -e "group mycluster \n{" > $csync2CfgFile
-echo    "    host $nodeName;">> $csync2CfgFile
-for _host in $(echo $nodesString | tr ',' '\n') ; do
-echo    "    host $_host;"   >> $csync2CfgFile
+        echo "Wrote \"$csync2CfgFile\""
 done
-echo    "    key $keyFile;"  >> $csync2CfgFile
-for _dir in $(echo $dirsString | tr ',' '\n') ; do
-echo    "    include $_dir;" >> $csync2CfgFile
-done
-echo    "    exclude *~ .*;" >> $csync2CfgFile
-echo    "}"                  >> $csync2CfgFile
-
-echo "Wrote \"$csync2CfgFile\""
 
 mkdir -p $(dirname $lsyncdCfgFile)
 # create lsyncd cfg
@@ -102,7 +110,7 @@ initSync = {
                         return "\t" .. config.syncid .. ":" .. directory .. path
                 end)
                 log("Normal", "Processing syncing list:\n", table.concat(paths, "\n"))
-                spawn(elist, "/usr/sbin/csync2", "-x", "-N", "$nodeName")
+                spawn(elist, "/usr/sbin/csync2", "-x", "-C", config.syncid, "-N", "$nodeName")
         end,
         collect = function(agent, exitcode)
                 local config = agent.config
@@ -141,14 +149,14 @@ initSync = {
                 local inlet = event.inlet;
                 local config = inlet.getConfig();
                 log("Normal", "Recursive startup sync: ", config.syncid, ":", config.source)
-                spawn(event, "/usr/sbin/csync2", "-x", "-N", "$nodeName")
+                spawn(event, "/usr/sbin/csync2", "-C", config.syncid, "-xr", "-N", "$nodeName")
         end,
         prepare = function(config)
                 if not config.syncid then
                         error("Missing 'syncid' parameter.", 4)
                 end
-                local c = "csync2.cfg"
-                local f, err = io.open("/etc/" .. c, "r")
+                local c = "csync2_" .. config.syncid .. ".cfg"
+                local f, err = io.open("/etc/csync2/" .. c, "r")
                 if not f then
                         error("Invalid 'syncid' parameter: " .. err, 4)
                 end
@@ -156,7 +164,7 @@ initSync = {
         end
 }
 local sources = {
-$(for _dir in $(echo $dirsString | tr ',' '\n') ; do echo "        [\"$_dir\"] = \"node\","; done)
+$(for _dir in $(echo $dirsString | tr ',' '\n') ; do echo "        [\"$_dir\"] = \"$confName\","; done)
 }
 for key, value in pairs(sources) do
         sync {initSync, source=key, syncid=value}
@@ -176,7 +184,7 @@ echo "Wrote \"$keyFile\""
 # setup /etc/hosts
 
 for _hostString in $(echo $nodesString | tr ',' '\n') ; do
-  _host=${nodesString%%@*}
+  _host=${_hostString%%@*}
   sed -i "/.*$_host.*/d" /etc/hosts
   _string="127.0.0.1  $_host" 
   if ! grep -q "$_string"  /etc/hosts ; then
@@ -190,7 +198,7 @@ echo "Wrote /etc/hosts"
 ###
 # Run csync2
 
-stdbuf -oL csync2 -ii -v -N $nodeName | sed -e 's/^/csync2: /' > /dev/stdout 2>&1 &
+stdbuf -oL csync2 -ii -v -N $nodeName -C $confName | sed -e 's/^/csync2: /' > /dev/stdout 2>&1 &
 csync2Pid=$!
 
 echo "Started csync2 with pid $csync2Pid"
