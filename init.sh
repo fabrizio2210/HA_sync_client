@@ -102,7 +102,7 @@ initSync = {
                         return "\t" .. config.syncid .. ":" .. directory .. path
                 end)
                 log("Normal", "Processing syncing list:\n", table.concat(paths, "\n"))
-                spawn(elist, "/usr/sbin/csync2", "-x")
+                spawn(elist, "/usr/sbin/csync2", "-x", "-N", "$nodeName")
         end,
         collect = function(agent, exitcode)
                 local config = agent.config
@@ -141,7 +141,7 @@ initSync = {
                 local inlet = event.inlet;
                 local config = inlet.getConfig();
                 log("Normal", "Recursive startup sync: ", config.syncid, ":", config.source)
-                spawn(event, "/usr/sbin/csync2", "-x")
+                spawn(event, "/usr/sbin/csync2", "-x", "-N", "$nodeName")
         end,
         prepare = function(config)
                 if not config.syncid then
