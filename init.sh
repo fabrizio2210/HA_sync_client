@@ -71,10 +71,12 @@ for _hostString in $(echo $nodesString | tr ',' '\n') ; do
         csync2CfgFile="$csync2CfgDir/csync2_$(echo ${__host} | tr -d '._-').cfg"
         echo -e "group mycluster \n{" > $csync2CfgFile
         for _host in $(echo $nodesString | tr ',' '\n') ; do
-                if [  "$_host" != "$__host" ] ; then
+                if [  "${_host%%@*}" != "$__host" ] ; then
+                        # host slave
                         echo    "    host ($_host);"   >> $csync2CfgFile
                 else
-                        echo    "    host $_host;"   >> $csync2CfgFile
+                        # host master
+                        echo    "    host ${_host%%@*};"   >> $csync2CfgFile
                 fi
         done
         echo    "    key $keyFile;"  >> $csync2CfgFile
@@ -157,7 +159,7 @@ initSync = {
                         error("Missing 'syncid' parameter.", 4)
                 end
                 local c = "csync2_" .. config.syncid .. ".cfg"
-                local f, err = io.open("/etc/csync2/" .. c, "r")
+                local f, err = io.open("/etc/" .. c, "r")
                 if not f then
                         error("Invalid 'syncid' parameter: " .. err, 4)
                 end
