@@ -12,8 +12,9 @@ nodesString=$CSYNC2_NODES
 nodeName=$CSYNC2_NAME
 key=$CSYNC2_KEY
 dirsString=$CSYNC2_DIRS
+authJson=$CSYNC2_AUTHJSON
 
-while getopts "l:n:k:d:" opt; do
+while getopts "l:n:k:d:a:" opt; do
   case $opt in
     l)
       nodesString=$(echo $OPTARG | tr -d '[[:space:]]')
@@ -26,6 +27,9 @@ while getopts "l:n:k:d:" opt; do
 			;;
 		d)
 			dirsString=$(echo $OPTARG | tr -d '[[:space:]]')
+      ;;
+		a)
+			authJson=$OPTARG
       ;;
     \?)
       echo "Invalid option: -$OPTARG" >&2
@@ -46,6 +50,7 @@ csync2CfgDir=/etc/
 lsyncdCfgFile=/etc/lsyncd/lsyncd.conf.lua
 keyFile=/etc/csync2.key
 confName=$(echo $nodeName | tr -d '._-')
+authFile=/etc/chisel.auth
 echo "configuration name: $confName"
 
 ######
@@ -179,9 +184,15 @@ done
 
 echo "Wrote \"$lsyncdCfgFile\""
 
+###
 # write csync2 key
 echo "$key" > $keyFile
 echo "Wrote \"$keyFile\""
+
+###
+# write auth file for proxy
+echo "$authJson" > $authFile
+echo "Wrote \"$authFile\""
 
 ###
 # setup /etc/hosts
@@ -203,6 +214,7 @@ echo "Wrote /etc/hosts"
 
 stdbuf -oL csync2 -ii -v -N $nodeName -C $confName | sed -e 's/^/csync2: /' > /dev/stdout 2>&1 &
 csync2Pid=$!
+echo $csync2Pid > /var/run/csync2.pid
 
 echo "Started csync2 with pid $csync2Pid"
 
@@ -212,5 +224,16 @@ echo "Started csync2 with pid $csync2Pid"
 
 stdbuf -oL /usr/bin/lsyncd  -nodaemon -delay 5 $lsyncdCfgFile 2>&1 | sed -e 's/^/lsyncd: /' > /dev/stdout 2>&1 &
 lsyncdPid=$!
+echo $lsyncdPid > /var/run/lsyncd.pid
 
 echo "Started lsyncd with pid $lsyncdPid"
+
+
+###
+# Run proxy server
+
+stdbuf -oL /usr/local/bin/chisel_linux_arm server --port 80 --proxy http://example.com --authfile $authFile | sed -e 's/^/tunnel: /' &
+proxyPid=$!
+echo $proxyPid > /var/run/proxy.pid
+
+echo "Started proxy server with pid $proxyPid"
