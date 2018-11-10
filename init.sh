@@ -212,7 +212,7 @@ echo "Wrote /etc/hosts"
 ###
 # Run csync2
 
-stdbuf -oL csync2 -ii -v -N $nodeName -C $confName | sed -e 's/^/csync2: /' > /dev/stdout 2>&1 &
+stdbuf -oL csync2 -ii -v -N $nodeName -C $confName | sed -u -e 's/^/csync2: /' > /dev/stdout 2>&1 &
 csync2Pid=$!
 echo $csync2Pid > /var/run/csync2.pid
 
@@ -222,7 +222,7 @@ echo "Started csync2 with pid $csync2Pid"
 ###
 # run lsyncd
 
-stdbuf -oL /usr/bin/lsyncd  -nodaemon -delay 5 $lsyncdCfgFile 2>&1 | sed -e 's/^/lsyncd: /' > /dev/stdout 2>&1 &
+stdbuf -oL /usr/bin/lsyncd  -nodaemon -delay 5 $lsyncdCfgFile 2>&1 | sed -u -e 's/^/lsyncd: /' > /dev/stdout 2>&1 &
 lsyncdPid=$!
 echo $lsyncdPid > /var/run/lsyncd.pid
 
@@ -232,7 +232,7 @@ echo "Started lsyncd with pid $lsyncdPid"
 ###
 # Run proxy server
 
-stdbuf -oL /usr/local/bin/chisel_linux_arm server --port 80 --proxy http://example.com --authfile $authFile 2>&1 | sed -e 's/^/tunnel: /' > /dev/stdout 2>&1 &
+stdbuf -oL /usr/local/bin/chisel_linux_arm server --port 80 --proxy http://example.com --authfile $authFile 2>&1 | sed -u -e 's/^/tunnel: /' > /dev/stdout 2>&1 &
 proxyPid=$!
 echo $proxyPid > /var/run/proxy.pid
 
