@@ -6,6 +6,7 @@
 # (n) Nome nodo: nome ( bananam2u1oss)
 # (k) Chiave: stringa base64 ( 8BLJdGh1bD03CLNoAwOwVljJaBj7Qmc9O9q )
 # (d) Directories: lista di directory to sync ( /opt/data/,/opt/data2 )
+# (a) authJson: json per impostare autenticazione al proxy
 
 
 nodesString=$CSYNC2_NODES
