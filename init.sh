@@ -42,6 +42,7 @@ done
 [ -z "$nodeName" ] && echo "Node name missing, define with -n" && exit 1
 [ -z "$key" ] && echo "Key is missing, define with -k" && exit 1
 [ -z "$dirsString" ] && echo "Dirs is missing, define with -d" && exit 1
+[ -z "$authJson" ] && echo "Auth json is missing, define with -a" && exit 1
 
 #VOLUMES
 # /etc
