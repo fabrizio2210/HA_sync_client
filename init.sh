@@ -234,7 +234,7 @@ echo "Started lsyncd with pid $lsyncdPid"
 ###
 # Run proxy server
 
-stdbuf -oL /usr/local/bin/chisel_linux_arm server --port 80 --proxy http://example.com --authfile $authFile 2>&1 | sed -u -e 's/^/tunnel: /' > /dev/stdout 2>&1 &
+stdbuf -oL /usr/local/bin/chisel server --port 80 --proxy http://example.com --authfile $authFile 2>&1 | sed -u -e 's/^/tunnel: /' > /dev/stdout 2>&1 &
 proxyPid=$!
 echo $proxyPid > /var/run/proxy.pid
 
