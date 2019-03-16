@@ -201,6 +201,9 @@ echo "Wrote \"$authFile\""
 
 for _hostString in $(echo $nodesString | tr ',' '\n') ; do
   _host=${_hostString%%@*}
+  if [ $_host == $nodeName ] ; then
+    continue
+  fi
   sed -i "/.*$_host.*/d" /etc/hosts
   _string="127.0.0.1  $_host" 
   if ! grep -q "$_string"  /etc/hosts ; then
