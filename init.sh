@@ -201,9 +201,6 @@ echo "Wrote \"$authFile\""
 
 for _hostString in $(echo $nodesString | tr ',' '\n') ; do
   _host=${_hostString%%@*}
-  if [ $_host == $nodeName ] ; then
-    continue
-  fi
   sed -i "/.*$_host.*/d" /etc/hosts
   _string="127.0.0.1  $_host" 
   if ! grep -q "$_string"  /etc/hosts ; then
@@ -223,6 +220,13 @@ echo $csync2Pid > /var/run/csync2.pid
 
 echo "Started csync2 with pid $csync2Pid"
 
+# remove localhost for client csync (Lsyncd) after csync server is bound
+while ! ss -tln | grep -q 30865 ; do
+  echo "Waiting for csync2 is bound on localhost"
+  sleep 1
+done
+sed "/.*$nodeName.*/d" /etc/hosts > /etc/hosts.new
+cp -f /etc/hosts.new /etc/hosts
 
 ###
 # run lsyncd
