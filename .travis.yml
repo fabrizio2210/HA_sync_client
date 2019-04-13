@@ -1,8 +1,0 @@
-addons:
-  ssh_known_hosts: github.com
-
-language: generic
-
-script:
-  - ./travis/update-topmodules.sh "$MYPROJECT_CI_PRIVATE_KEY" 'https://github.com/fabrizio2210/docker-HA_volume_sync_server.git;armv7hf:src'
-  - ./travis/update-topmodules.sh "$MYPROJECT_CI_PRIVATE_KEY" 'https://github.com/fabrizio2210/docker-HA_volume_sync_server.git;x86_64:src'
