@@ -10,7 +10,6 @@ RUN wget https://github.com/jpillora/chisel/releases/download/1.2.4/chisel_linux
 
 
 COPY src/* /usr/local/bin/
-COPY wrapper.sh /usr/local/bin/
 
 VOLUME ["/etc", "/var/lib/csync2"]
 EXPOSE 80/tcp
